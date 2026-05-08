@@ -5,6 +5,9 @@ const http = axios.create({ baseURL: '' })
 export const analyzeText = (text) =>
   http.post('/api/analyze', { text }).then(r => r.data)
 
+export const analyzeUrl = (url) =>
+  http.post('/api/scrape', { url }).then(r => r.data)
+
 export const compareTexts = (text_a, label_a, text_b, label_b) =>
   http.post('/api/compare', { text_a, label_a, text_b, label_b }).then(r => r.data)
 

@@ -15,6 +15,8 @@ from typing import Any, Dict, List, Optional
 import nltk
 import numpy as np
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -208,6 +210,9 @@ class CompareReq(BaseModel):
     text_a: str; label_a: str = "Text A"
     text_b: str; label_b: str = "Text B"
 
+class ScrapeReq(BaseModel):
+    url: str
+
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.get("/health")
@@ -226,6 +231,41 @@ def analyze(req: AnalyzeReq, db: Session = Depends(get_db)):
     rid = _save(db, req.text, r, "single")
     return {**r, "sentences": _sentences(req.text),
             "keywords": _keywords(req.text), "record_id": rid}
+
+
+@app.post("/api/scrape")
+def scrape(req: ScrapeReq, db: Session = Depends(get_db)):
+    if not req.url.strip():
+        raise HTTPException(400, "URL required")
+    if _vader is None:
+        raise HTTPException(503, "Models loading")
+    
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(req.url, headers=headers, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Extract text from paragraphs
+        paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3'])
+        text_content = " ".join([p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True)])
+        
+        if not text_content:
+            raise HTTPException(400, "Could not extract any readable text from the URL")
+            
+        text_content = text_content[:5000] # Limit size for performance
+        
+        r = _analyze(text_content)
+        rid = _save(db, text_content, r, "url_scrape")
+        title = soup.title.string if soup.title else req.url
+        
+        return {**r, "sentences": _sentences(text_content),
+                "keywords": _keywords(text_content), "record_id": rid, 
+                "title": title, "text": text_content}
+    except requests.RequestException as e:
+        raise HTTPException(400, f"Failed to fetch URL: {str(e)}")
+    except Exception as e:
+        raise HTTPException(500, f"Error processing URL: {str(e)}")
 
 
 @app.post("/api/compare")

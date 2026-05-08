@@ -3,9 +3,11 @@ import AnalyzeTab from './components/AnalyzeTab'
 import CompareTab from './components/CompareTab'
 import BatchTab   from './components/BatchTab'
 import HistoryTab from './components/HistoryTab'
+import UrlTab     from './components/UrlTab'
 
 const TABS = [
   { id: 'analyze', label: '📊 Analyze'  },
+  { id: 'url',     label: '🔗 URL Scrape' },
   { id: 'compare', label: '⚖️ Compare'  },
   { id: 'batch',   label: '📁 Batch CSV' },
   { id: 'history', label: '📈 History'  },
@@ -66,6 +68,7 @@ export default function App() {
         {/* Content */}
         <div className="card">
           {tab === 'analyze' && <AnalyzeTab />}
+          {tab === 'url'     && <UrlTab />}
           {tab === 'compare' && <CompareTab />}
           {tab === 'batch'   && <BatchTab />}
           {tab === 'history' && <HistoryTab />}
