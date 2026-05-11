@@ -2,6 +2,23 @@ import axios from 'axios'
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_URL || '' })
 
+// ── Auth Token Interceptor ──
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem('sid_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// ── Auth ──
+export const loginUser = (username, password) =>
+  http.post('/api/login', { username, password }).then(r => r.data)
+
+export const registerUser = (username, password) =>
+  http.post('/api/register', { username, password }).then(r => r.data)
+
+// ── Analysis ──
 export const analyzeText = (text) =>
   http.post('/api/analyze', { text }).then(r => r.data)
 
@@ -20,6 +37,14 @@ export const uploadBatch = (file, onProgress) => {
   }).then(r => r.data)
 }
 
+// ── AI Features ──
+export const summarizeText = (text) =>
+  http.post('/api/summarize', { text }).then(r => r.data)
+
+export const extractTopics = (text) =>
+  http.post('/api/topics', { text }).then(r => r.data)
+
+// ── History ──
 export const getHistory  = (limit = 100, offset = 0) =>
   http.get('/api/history', { params: { limit, offset } }).then(r => r.data)
 
